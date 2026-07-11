@@ -24,13 +24,9 @@ import (
 )
 
 func playCallbackHandler(c *td.Client, cb *td.UpdateNewCallbackQuery) error {
+	data := cb.DataString()
 	if !adminModeCB(c, cb) {
 		return td.EndGroups
-	}
-
-	data := cb.DataString()
-	if strings.Contains(data, "settings_") {
-		return nil
 	}
 
 	chatID := cb.ChatId
@@ -171,6 +167,20 @@ func playCallbackHandler(c *td.Client, cb *td.UpdateNewCallbackQuery) error {
 		}
 
 		_ = cb.Answer(c, 0, false, fmt.Sprintf("Track \"%s\" added to playlist \"%s\".", song.Name, playlist.Name), "")
+		return nil
+
+	case strings.HasPrefix(data, "play_now_"):
+		trackID := strings.TrimPrefix(data, "play_now_")
+		if ok := cache.ChatCache.MoveTrackToFront(chatID, trackID); !ok {
+			_ = cb.Answer(c, 0, false, "Track not found in queue.", "")
+			return nil
+		}
+		if err := vc.Calls.PlayNext(c, chatID); err != nil {
+			_ = cb.Answer(c, 0, false, "Unable to play the track.", "")
+			return nil
+		}
+		_ = cb.Answer(c, 0, false, "Playing now.", "")
+		_ = c.DeleteMessages(chatID, []int64{cb.MessageId}, &td.DeleteMessagesOpts{Revoke: true})
 		return nil
 	}
 
