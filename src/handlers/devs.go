@@ -40,7 +40,7 @@ func activeVcHandler(c *td.Client, m *td.Message) error {
 	} else {
 		sb.WriteString(fmt.Sprintf("<p>There are currently <b>%d</b> active voice/video chat(s) running.</p>", len(activeChats)))
 		sb.WriteString("<details>")
-		sb.WriteString("<summary><b>📊 Click to Show Active Chats Table</b></summary>")
+		sb.WriteString("<summary><b>📊 Click to Show Active Chats</b></summary>")
 		sb.WriteString("<br>")
 		sb.WriteString("<table bordered striped>")
 		sb.WriteString("<tr>")
@@ -48,14 +48,13 @@ func activeVcHandler(c *td.Client, m *td.Message) error {
 		sb.WriteString("<th align='center'><b>Chat ID</b></th>")
 		sb.WriteString("<th align='center'><b>Queue</b></th>")
 		sb.WriteString("<th align='left'><b>Now Playing Track Info</b></th>")
-		sb.WriteString("<th align='center'><b>Type</b></th>")
 		sb.WriteString("</tr>")
 
 		for i, chatID := range activeChats {
 			queueLength := cache.ChatCache.GetQueueLength(chatID)
 			currentSong := cache.ChatCache.GetPlayingTrack(chatID)
 
-			var trackLink, trackType string
+			var trackLink string
 			if currentSong != nil {
 				trackName := html.EscapeString(currentSong.Name)
 				trackURL := html.EscapeString(currentSong.URL)
@@ -64,14 +63,8 @@ func activeVcHandler(c *td.Client, m *td.Message) error {
 				}
 				durStr := utils.SecToMin(currentSong.Duration)
 				trackLink = fmt.Sprintf("<a href='%s'>%s</a> (%s)", trackURL, trackName, durStr)
-				if currentSong.IsVideo {
-					trackType = "<tg-emoji emoji-id='5368324170671202286'>🎥</tg-emoji> Video"
-				} else {
-					trackType = "<tg-emoji emoji-id='5368324170671202286'>🎵</tg-emoji> Audio"
-				}
 			} else {
 				trackLink = "<i>🔇 No song playing.</i>"
-				trackType = "<tg-emoji emoji-id='5368324170671202286'>🎵</tg-emoji> Audio"
 			}
 
 			sb.WriteString("<tr>")
@@ -79,7 +72,6 @@ func activeVcHandler(c *td.Client, m *td.Message) error {
 			sb.WriteString(fmt.Sprintf("<td align='center'><code>%d</code></td>", chatID))
 			sb.WriteString(fmt.Sprintf("<td align='center'>%d</td>", queueLength))
 			sb.WriteString(fmt.Sprintf("<td align='left'>%s</td>", trackLink))
-			sb.WriteString(fmt.Sprintf("<td align='center'>%s</td>", trackType))
 			sb.WriteString("</tr>")
 		}
 		sb.WriteString("</table>")
